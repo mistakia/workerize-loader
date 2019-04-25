@@ -56,6 +56,8 @@ loader.pitch = function(request) {
 		console.warn('Warning (workerize-loader): output.globalObject is set to "window". It should be set to "self" or "this" to support HMR in Workers.');
 	}
 
+	const isDevelopment = compilerOptions.mode === 'development';
+
 	worker.compiler = this._compilation.createChildCompiler('worker', worker.options);
 
 	(new WebWorkerTemplatePlugin(worker.options)).apply(worker.compiler);
@@ -83,7 +85,9 @@ loader.pitch = function(request) {
 				// only process entry exports
 				if (current.resource!==entry) return;
 
-				let exports = CACHE[entry] || (CACHE[entry] = {});
+				let exports = isDevelopment ?
+					CACHE[entry] || (CACHE[entry] = {}) :
+					compilation.__workerizeExports || (compilation.__workerizeExports = {});
 
 				if (decl.id) {
 					exports[decl.id.name] = true;
@@ -106,9 +110,11 @@ loader.pitch = function(request) {
 		if (entries[0]) {
 			worker.file = entries[0].files[0];
 
-			let entry = entries[0].entryModule.resource;
+			let entry = isDevelopment ? entries[0].entryModule.resource : undefined;
 			let contents = compilation.assets[worker.file].source();
-			let exports = Object.keys(CACHE[entry] || {});
+			let exports = isDevelopment ?
+				Object.keys(CACHE[entry] || {}) :
+				Object.keys(CACHE[worker.file] = compilation.__workerizeExports || CACHE[worker.file] || {});
 
 			// console.log('Workerized exports: ', exports.join(', '));
 
