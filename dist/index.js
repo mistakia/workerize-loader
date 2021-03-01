@@ -83,7 +83,7 @@ loader.pitch = function (request) {
   new SingleEntryPlugin(this.context, "!!" + path.resolve(__dirname, 'rpc-worker-loader.js') + "!" + request, 'main').apply(worker.compiler);
   var subCache = "subcache " + __dirname + " " + request;
   compilationHook(worker.compiler, function (compilation, data) {
-    if (compilation.cache) {
+    if (typeof compilation.getCache !== 'function' && compilation.cache) {
       var cache;
 
       if (compilation.cache instanceof Map) {
