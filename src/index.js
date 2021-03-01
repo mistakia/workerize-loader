@@ -88,7 +88,7 @@ loader.pitch = function(request) {
 	const subCache = `subcache ${__dirname} ${request}`;
 
 	compilationHook(worker.compiler, (compilation, data) => {
-		if (compilation.cache) {
+		if (typeof compilation.getCache !== 'function' && compilation.cache) {
 			let cache;
 			if (compilation.cache instanceof Map) {
 				cache = compilation.cache.get(subCache);
