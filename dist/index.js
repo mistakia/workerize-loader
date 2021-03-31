@@ -157,9 +157,11 @@ loader.pitch = function (request) {
 
       if (options.import) {
         workerUrl = "\"data:,importScripts('\"+location.origin+" + workerUrl + "+\"')\"";
-      }
+      } // workerUrl will be URL.revokeObjectURL() to avoid memory leaks on browsers
+      // https://github.com/webpack-contrib/worker-loader/issues/208
 
-      return cb(null, "\n\t\t\t\tvar addMethods = require(" + loaderUtils.stringifyRequest(_this, path.resolve(__dirname, 'rpc-wrapper.js')) + ")\n\t\t\t\tvar methods = " + JSON.stringify(exports) + "\n\t\t\t\tmodule.exports = function() {\n\t\t\t\t\tvar w = new Worker(" + workerUrl + ", { name: " + JSON.stringify(filename) + " })\n\t\t\t\t\taddMethods(w, methods)\n\t\t\t\t\t" + (options.ready ? 'w.ready = new Promise(function(r) { w.addEventListener("ready", function(){ r(w) }) })' : '') + "\n\t\t\t\t\treturn w\n\t\t\t\t}\n\t\t\t");
+
+      return cb(null, "\n\t\t\t\tvar addMethods = require(" + loaderUtils.stringifyRequest(_this, path.resolve(__dirname, 'rpc-wrapper.js')) + ")\n\t\t\t\tvar methods = " + JSON.stringify(exports) + "\n\t\t\t\tmodule.exports = function() {\n\t\t\t\t\tvar w = new Worker(" + workerUrl + ", { name: " + JSON.stringify(filename) + " })\n\t\t\t\t\tURL.revokeObjectURL(" + workerUrl + ");\n\t\t\t\t\taddMethods(w, methods)\n\t\t\t\t\t" + (options.ready ? 'w.ready = new Promise(function(r) { w.addEventListener("ready", function(){ r(w) }) })' : '') + "\n\t\t\t\t\treturn w\n\t\t\t\t}\n\t\t\t");
     }
 
     return cb(null, null);
