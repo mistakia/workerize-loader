@@ -7,7 +7,6 @@ import WebWorkerTemplatePlugin from 'webpack/lib/webworker/WebWorkerTemplatePlug
 
 export default function loader() {}
 
-const CACHE = {};
 const tapName = 'workerize-loader';
 
 function compilationHook(compiler, handler) {
@@ -88,21 +87,7 @@ loader.pitch = function(request) {
 	const subCache = `subcache ${__dirname} ${request}`;
 
 	compilationHook(worker.compiler, (compilation, data) => {
-		if (typeof compilation.getCache !== 'function' && compilation.cache) {
-			let cache;
-			if (compilation.cache instanceof Map) {
-				cache = compilation.cache.get(subCache);
-				if (!cache) {
-					cache = new Map();
-					compilation.cache.set(subCache, cache);
-				}
-			}
-			else if (!compilation.cache[subCache]) {
-				cache = compilation.cache[subCache] = {};
-			}
-			
-			compilation.cache = cache;
-		}
+		const CACHE = compilation.getCache(subCache);
 		parseHook(data, (parser, options) => {
 			exportDeclarationHook(parser, expr => {
 				let decl = expr.declaration || expr;
