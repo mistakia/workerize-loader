@@ -81,7 +81,9 @@ loader.pitch = function (request) {
 
   new SingleEntryPlugin(this.context, "!!" + path.resolve(__dirname, 'rpc-worker-loader.js') + "!" + request, 'main').apply(worker.compiler);
   var subCache = "subcache " + __dirname + " " + request;
-  var CACHE = compilation.getCache(subCache);
+
+  var CACHE = this._compilation.getCache(subCache);
+
   compilationHook(worker.compiler, function (compilation, data) {
     parseHook(data, function (parser, options) {
       exportDeclarationHook(parser, function (expr) {
