@@ -7,7 +7,6 @@ var SingleEntryPlugin = _interopDefault(require('webpack/lib/SingleEntryPlugin')
 var WebWorkerTemplatePlugin = _interopDefault(require('webpack/lib/webworker/WebWorkerTemplatePlugin'));
 
 function loader() {}
-var CACHE = {};
 var tapName = 'workerize-loader';
 
 function compilationHook(compiler, handler) {
@@ -83,23 +82,7 @@ loader.pitch = function (request) {
   new SingleEntryPlugin(this.context, "!!" + path.resolve(__dirname, 'rpc-worker-loader.js') + "!" + request, 'main').apply(worker.compiler);
   var subCache = "subcache " + __dirname + " " + request;
   compilationHook(worker.compiler, function (compilation, data) {
-    if (typeof compilation.getCache !== 'function' && compilation.cache) {
-      var cache;
-
-      if (compilation.cache instanceof Map) {
-        cache = compilation.cache.get(subCache);
-
-        if (!cache) {
-          cache = new Map();
-          compilation.cache.set(subCache, cache);
-        }
-      } else if (!compilation.cache[subCache]) {
-        cache = compilation.cache[subCache] = {};
-      }
-
-      compilation.cache = cache;
-    }
-
+    var CACHE = compilation.getCache(subCache);
     parseHook(data, function (parser, options) {
       exportDeclarationHook(parser, function (expr) {
         var decl = expr.declaration || expr;
