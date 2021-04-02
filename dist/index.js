@@ -7,6 +7,7 @@ var SingleEntryPlugin = _interopDefault(require('webpack/lib/SingleEntryPlugin')
 var WebWorkerTemplatePlugin = _interopDefault(require('webpack/lib/webworker/WebWorkerTemplatePlugin'));
 
 function loader() {}
+var CACHE = {};
 var tapName = 'workerize-loader';
 
 function compilationHook(compiler, handler) {
@@ -39,23 +40,21 @@ loader.pitch = function (request) {
   this.cacheable(false);
   var options = loaderUtils.getOptions(this) || {};
   var cb = this.async();
-  var filename = loaderUtils.interpolateName(this, (options.name || '[fullhash]') + ".worker.js", {
-    context: options.context || this.rootContext || this.options.context,
-    regExp: options.regExp
-  });
+  var compilerOptions = this._compiler.options || {};
+  var filename = (options.name || '[fullhash]') + '.worker.js';
   var worker = {};
   worker.options = {
     filename: filename,
-    chunkFilename: "[id]." + filename,
-    namedChunkFilename: null
+    chunkFilename: filename,
+    publicPath: options.publicPath || compilerOptions.output.publicPath,
+    globalObject: 'self'
   };
-  var compilerOptions = this._compiler.options || {};
 
   if (compilerOptions.output && compilerOptions.output.globalObject === 'window') {
     console.warn('Warning (workerize-loader): output.globalObject is set to "window". It should be set to "self" or "this" to support HMR in Workers.');
   }
 
-  worker.compiler = this._compilation.createChildCompiler('worker', worker.options);
+  worker.compiler = this._compilation.createChildCompiler("worker " + request, worker.options);
   new WebWorkerTemplatePlugin(worker.options).apply(worker.compiler);
 
   if (this.target !== 'webworker' && this.target !== 'web') {
@@ -79,11 +78,8 @@ loader.pitch = function (request) {
     }).apply(worker.compiler);
   }
 
-  new SingleEntryPlugin(this.context, "!!" + path.resolve(__dirname, 'rpc-worker-loader.js') + "!" + request, 'main').apply(worker.compiler);
-  var subCache = "subcache " + __dirname + " " + request;
-
-  var CACHE = this._compilation.getCache(subCache);
-
+  var bundleName = path.parse(this.resourcePath).name;
+  new SingleEntryPlugin(this.context, "!!" + path.resolve(__dirname, 'rpc-worker-loader.js') + "!" + request, bundleName).apply(worker.compiler);
   compilationHook(worker.compiler, function (compilation, data) {
     parseHook(data, function (parser, options) {
       exportDeclarationHook(parser, function (expr) {
@@ -91,7 +87,7 @@ loader.pitch = function (request) {
         var _parser$state = parser.state,
             compilation = _parser$state.compilation,
             current = _parser$state.current;
-        var entryModule = compilation.entries instanceof Map ? compilation.moduleGraph.getModule(compilation.entries.get('main').dependencies[0]) : compilation.entries[0]; // only process entry exports
+        var entryModule = compilation.entries instanceof Map ? compilation.moduleGraph.getModule(compilation.entries.get(bundleName).dependencies[0]) : compilation.entries[0]; // only process entry exports
 
         if (current.resource !== entryModule.resource) return;
         var key = current.nameForCondition();
@@ -115,7 +111,7 @@ loader.pitch = function (request) {
           var _require2 = require('webpack'),
               UsageState = _require2.UsageState;
 
-          var runtime = getEntryRuntime(compilation, 'main');
+          var runtime = getEntryRuntime(compilation, bundleName);
 
           for (var _i = 0, _Object$keys = Object.keys(exports); _i < _Object$keys.length; _i++) {
             var exportName = _Object$keys[_i];
