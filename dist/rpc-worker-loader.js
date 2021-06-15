@@ -30,9 +30,13 @@ function workerSetup() {
         };
 
         if (e.stack) {
-          error.message = e.message;
           error.stack = e.stack;
           error.name = e.name;
+        }
+
+        if (e.status) {
+          error.status = e.status;
+          error.responseJson = e.responseJson;
         }
 
         postMessage({
