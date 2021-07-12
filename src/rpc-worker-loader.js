@@ -14,7 +14,14 @@ function workerSetup() {
 				postMessage({ type: 'RPC', id, result });
 			})
 				.catch(e => {
-					let error = { message: e };
+					let message;
+					try {
+						message = e.message.toString();
+					}
+					catch (ex) {
+						message = null;
+					}
+					let error = { message };
 					if (e.stack) {
 						error.stack = e.stack;
 						error.name = e.name;
