@@ -25,8 +25,16 @@ function workerSetup() {
           result: result
         });
       }).catch(function (e) {
+        var message;
+
+        try {
+          message = e.message.toString();
+        } catch (ex) {
+          message = null;
+        }
+
         var error = {
-          message: e
+          message: message
         };
 
         if (e.stack) {
